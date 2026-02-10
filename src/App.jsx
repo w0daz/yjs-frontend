@@ -11,12 +11,46 @@ import './App.css'
 const wsUrl = import.meta.env.VITE_YJS_WS_URL || 'ws://localhost:1234'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-const defaultRoom = 'doc-1'
 
 const userColors = ['#2b6cb0', '#2f855a', '#b83280', '#c05621', '#6b46c1']
 const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null
+
+const getSearchParam = (key) =>
+  new URLSearchParams(window.location.search).get(key) || ''
+
+const getRoomFromUrl = () => getSearchParam('room') || getSearchParam('doc')
+const getInviteFromUrl = () => getSearchParam('invite')
+
+const updateRoomInUrl = (roomId) => {
+  const url = new URL(window.location.href)
+
+  if (roomId) {
+    url.searchParams.set('room', roomId)
+  } else {
+    url.searchParams.delete('room')
+  }
+
+  url.searchParams.delete('doc')
+  url.searchParams.delete('invite')
+  window.history.replaceState({}, '', url)
+}
+
+const generateRoomKey = () => {
+  const bytes = new Uint8Array(6)
+  if (window.crypto && window.crypto.getRandomValues) {
+    window.crypto.getRandomValues(bytes)
+  } else {
+    for (let i = 0; i < bytes.length; i += 1) {
+      bytes[i] = Math.floor(Math.random() * 256)
+    }
+  }
+
+  return Array.from(bytes, (value) => (value % 36).toString(36))
+    .join('')
+    .toUpperCase()
+}
 
 const pickColor = (value) => {
   let hash = 0
@@ -36,11 +70,12 @@ function App() {
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState('')
   const [authLoading, setAuthLoading] = useState(false)
-
-  const roomName = useMemo(() => {
-    const params = new URLSearchParams(window.location.search)
-    return params.get('doc') || defaultRoom
-  }, [])
+  const [roomId, setRoomId] = useState(() => getRoomFromUrl())
+  const [roomKeyInput, setRoomKeyInput] = useState('')
+  const [inviteInput, setInviteInput] = useState('')
+  const [roomError, setRoomError] = useState('')
+  const [roomLoading, setRoomLoading] = useState(false)
+  const [inviteKey, setInviteKey] = useState(() => getInviteFromUrl())
 
   const user = useMemo(() => {
     const fallbackId = Math.floor(Math.random() * 900) + 100
@@ -70,16 +105,16 @@ function App() {
 
   const token = session?.access_token || ''
 
-  const doc = useMemo(() => new Y.Doc(), [])
+  const doc = useMemo(() => new Y.Doc(), [roomId])
   const provider = useMemo(() => {
-    if (!token) {
+    if (!token || !roomId) {
       return null
     }
 
-    return new WebsocketProvider(wsUrl, roomName, doc, {
+    return new WebsocketProvider(wsUrl, roomId, doc, {
       params: { token }
     })
-  }, [doc, roomName, wsUrl, token])
+  }, [doc, roomId, wsUrl, token])
 
   useEffect(() => {
     if (!provider) {
@@ -180,7 +215,117 @@ function App() {
     }
 
     await supabase.auth.signOut()
+    setRoomId('')
+    setRoomKeyInput('')
+    setInviteInput('')
+    setRoomError('')
+    setInviteKey('')
+    updateRoomInUrl('')
   }
+
+  const handleCreateRoom = async () => {
+    if (!supabase || !session) {
+      return
+    }
+
+    setRoomError('')
+    setRoomLoading(true)
+    const newKey = generateRoomKey()
+    const { data: room, error } = await supabase
+      .from('rooms')
+      .insert({ key: newKey, owner_id: session.user.id })
+      .select('id, key')
+      .single()
+
+    if (error || !room) {
+      setRoomError(error?.message || 'Failed to create room')
+      setRoomLoading(false)
+      return
+    }
+
+    const { error: memberError } = await supabase
+      .from('room_members')
+      .upsert({
+        room_id: room.id,
+        user_id: session.user.id
+      }, {
+        onConflict: 'room_id,user_id'
+      })
+
+    if (memberError) {
+      setRoomError(memberError.message)
+      setRoomLoading(false)
+      return
+    }
+
+    setRoomId(room.id)
+    setInviteKey('')
+    updateRoomInUrl(room.id)
+    setRoomLoading(false)
+  }
+
+  const joinRoomByKey = async (keyValue) => {
+    if (!supabase || !session) {
+      return
+    }
+
+    const trimmedKey = keyValue.trim().toUpperCase()
+    if (!trimmedKey) {
+      setRoomError('Enter a room key')
+      return
+    }
+
+    setRoomError('')
+    setRoomLoading(true)
+
+    const { data: roomIdFromRpc, error } = await supabase
+      .rpc('join_room_by_key', { p_key: trimmedKey })
+
+    if (error || !roomIdFromRpc) {
+      setRoomError(error?.message || 'Room not found')
+      setRoomLoading(false)
+      return
+    }
+
+    setRoomId(roomIdFromRpc)
+    setRoomKeyInput('')
+    setInviteInput('')
+    setInviteKey('')
+    updateRoomInUrl(roomIdFromRpc)
+    setRoomLoading(false)
+  }
+
+  const handleJoinByKey = async (event) => {
+    event.preventDefault()
+    await joinRoomByKey(roomKeyInput)
+  }
+
+  const handleJoinByInvite = async (event) => {
+    event.preventDefault()
+    const trimmed = inviteInput.trim()
+    if (!trimmed) {
+      setRoomError('Enter an invite link or key')
+      return
+    }
+
+    let keyValue = trimmed
+    try {
+      const url = new URL(trimmed)
+      keyValue = url.searchParams.get('invite') || trimmed
+    } catch {
+      keyValue = trimmed
+    }
+
+    await joinRoomByKey(keyValue)
+  }
+
+  useEffect(() => {
+    if (!inviteKey || !session) {
+      return
+    }
+
+    joinRoomByKey(inviteKey)
+  }, [inviteKey, session])
 
   if (!supabase) {
     return (
@@ -242,12 +387,64 @@ function App() {
     )
   }
 
+  if (!roomId) {
+    return (
+      <div className="app">
+        <div className="panel">
+          <h1>Choose a room</h1>
+          <p className="subtitle">
+            Create a new room or join an existing one.
+          </p>
+          <div className="room-actions">
+            <button
+              className="primary"
+              type="button"
+              onClick={handleCreateRoom}
+              disabled={roomLoading}
+            >
+              Create room
+            </button>
+            <form className="room-form" onSubmit={handleJoinByKey}>
+              <label className="field">
+                <span>Join with room key</span>
+                <input
+                  type="text"
+                  value={roomKeyInput}
+                  onChange={(event) => setRoomKeyInput(event.target.value)}
+                  placeholder="e.g. 8K2A1F"
+                />
+              </label>
+              <button type="submit" disabled={roomLoading}>
+                Join room
+              </button>
+            </form>
+            <form className="room-form" onSubmit={handleJoinByInvite}>
+              <label className="field">
+                <span>Join with invite link</span>
+                <input
+                  type="text"
+                  value={inviteInput}
+                  onChange={(event) => setInviteInput(event.target.value)}
+                  placeholder="Paste invite link"
+                />
+              </label>
+              <button type="submit" disabled={roomLoading}>
+                Join with invite
+              </button>
+            </form>
+            {roomError ? <p className="error">{roomError}</p> : null}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="app">
       <header className="app-header">
         <div>
           <h1>Collaborative Editor</h1>
-          <p className="subtitle">Room: {roomName}</p>
+          <p className="subtitle">Room: {roomId}</p>
         </div>
         <div className="header-actions">
           <div className={`status status--${status}`}>{status}</div>

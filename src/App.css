@@ -63,6 +63,19 @@ h1 {
   box-shadow: 0 10px 40px rgba(20, 20, 20, 0.08);
 }
 
+.room-actions {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.room-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .auth-form {
   margin-top: 16px;
   display: flex;
