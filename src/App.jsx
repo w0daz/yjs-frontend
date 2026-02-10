@@ -76,6 +76,9 @@ function App() {
   const [roomError, setRoomError] = useState('')
   const [roomLoading, setRoomLoading] = useState(false)
   const [inviteKey, setInviteKey] = useState(() => getInviteFromUrl())
+  const [roomKey, setRoomKey] = useState('')
+  const [copiedKey, setCopiedKey] = useState(false)
+  const [copiedInvite, setCopiedInvite] = useState(false)
 
   const user = useMemo(() => {
     const fallbackId = Math.floor(Math.random() * 900) + 100
@@ -153,7 +156,7 @@ function App() {
     }
 
     return [
-      StarterKit,
+      StarterKit.configure({ history: false }),
       Collaboration.configure({ document: doc }),
       CollaborationCursor.configure({ provider, user })
     ]
@@ -167,7 +170,7 @@ function App() {
         class: 'editor'
       }
     }
-  })
+  }, [provider, roomId])
 
   const handleSignIn = async (event) => {
     event.preventDefault()
@@ -220,7 +223,22 @@ function App() {
     setInviteInput('')
     setRoomError('')
     setInviteKey('')
+    setRoomKey('')
     updateRoomInUrl('')
+  }
+
+  const copyToClipboard = async (value, setCopied) => {
+    if (!value || !navigator.clipboard) {
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(value)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1500)
+    } catch {
+      // Ignore clipboard errors in restricted contexts.
+    }
   }
 
   const handleCreateRoom = async () => {
@@ -260,6 +278,7 @@ function App() {
 
     setRoomId(room.id)
     setInviteKey('')
+    setRoomKey(room.key)
     updateRoomInUrl(room.id)
     setRoomLoading(false)
   }
@@ -291,6 +310,7 @@ function App() {
     setRoomKeyInput('')
     setInviteInput('')
     setInviteKey('')
+    setRoomKey(trimmedKey)
     updateRoomInUrl(roomIdFromRpc)
     setRoomLoading(false)
   }
@@ -326,6 +346,34 @@ function App() {
 
     joinRoomByKey(inviteKey)
   }, [inviteKey, session])
+
+  useEffect(() => {
+    if (!supabase || !session || !roomId || roomKey) {
+      return
+    }
+
+    supabase
+      .from('rooms')
+      .select('key')
+      .eq('id', roomId)
+      .single()
+      .then(({ data, error }) => {
+        if (error) {
+          setRoomError(error.message)
+          return
+        }
+
+        setRoomKey(data?.key || '')
+      })
+  }, [roomId, roomKey, session])
+
+  const inviteLink = useMemo(() => {
+    if (!roomKey) {
+      return ''
+    }
+
+    return `${window.location.origin}/?invite=${encodeURIComponent(roomKey)}`
+  }, [roomKey])
 
   if (!supabase) {
     return (
@@ -453,6 +501,55 @@ function App() {
           </button>
         </div>
       </header>
+
+      <div className="share-row">
+        <div>
+          <span className="share-label">Room key</span>
+          <div className="share-value">
+            <span>{roomKey || 'Unavailable'}</span>
+            <button
+              className="copy-button"
+              type="button"
+              aria-label="Copy room key"
+              onClick={() => copyToClipboard(roomKey, setCopiedKey)}
+              disabled={!roomKey}
+            >
+              {copiedKey ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M9.5 16.2 5.8 12.5l1.4-1.4 2.3 2.3 7.3-7.3 1.4 1.4-8.7 8.7z" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8 7a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2V7zm-3 3H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-1H6a1 1 0 0 1-1-1v-8z" />
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
+        <div>
+          <span className="share-label">Invite link</span>
+          <div className="share-value">
+            <span>{inviteLink || 'Unavailable'}</span>
+            <button
+              className="copy-button"
+              type="button"
+              aria-label="Copy invite link"
+              onClick={() => copyToClipboard(inviteLink, setCopiedInvite)}
+              disabled={!inviteLink}
+            >
+              {copiedInvite ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M9.5 16.2 5.8 12.5l1.4-1.4 2.3 2.3 7.3-7.3 1.4 1.4-8.7 8.7z" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8 7a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2V7zm-3 3H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-1H6a1 1 0 0 1-1-1v-8z" />
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div className="meta">
         <div className="user-list">
