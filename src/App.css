@@ -11,6 +11,12 @@
   gap: 16px;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 h1 {
   margin: 0;
   font-size: 32px;
@@ -45,6 +51,88 @@ h1 {
 .status--connecting {
   background: #f1e1c6;
   color: #7a4c12;
+}
+
+.panel {
+  max-width: 440px;
+  margin: 80px auto 0;
+  background: #ffffff;
+  border: 1px solid #e2ddd5;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 10px 40px rgba(20, 20, 20, 0.08);
+}
+
+.auth-form {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: #5a5752;
+}
+
+.field input {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #d6cfc5;
+  background: #fbfaf8;
+  font-size: 14px;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+button {
+  border-radius: 999px;
+  border: 1px solid #d6cfc5;
+  padding: 8px 16px;
+  font-size: 14px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+button.primary {
+  background: #1f2933;
+  color: #ffffff;
+  border-color: #1f2933;
+}
+
+button.ghost {
+  background: transparent;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error {
+  margin: 0;
+  color: #7a2b2b;
+  font-size: 13px;
+}
+
+.helper {
+  color: #6b6660;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.mono {
+  font-family: "Courier New", Courier, monospace;
+  background: #efe9e0;
+  padding: 2px 6px;
+  border-radius: 6px;
 }
 
 .meta {
