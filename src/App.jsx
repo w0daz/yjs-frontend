@@ -7,14 +7,19 @@ import * as Y from 'yjs'
 import { WebsocketProvider } from 'y-websocket'
 import './App.css'
 
-const roomName = 'doc-1'
 const wsUrl = import.meta.env.VITE_YJS_WS_URL || 'ws://localhost:1234'
+const defaultRoom = 'doc-1'
 
 const userColors = ['#2b6cb0', '#2f855a', '#b83280', '#c05621', '#6b46c1']
 
 function App() {
   const [status, setStatus] = useState('connecting')
   const [users, setUsers] = useState([])
+
+  const roomName = useMemo(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('doc') || defaultRoom
+  }, [])
 
   const user = useMemo(() => {
     const id = Math.floor(Math.random() * 900) + 100
@@ -25,7 +30,7 @@ function App() {
   const doc = useMemo(() => new Y.Doc(), [])
   const provider = useMemo(
     () => new WebsocketProvider(wsUrl, roomName, doc),
-    [doc]
+    [doc, roomName]
   )
 
   useEffect(() => {
