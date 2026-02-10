@@ -18,6 +18,16 @@ const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null
 
+const pickColor = (value) => {
+  let hash = 0
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash << 5) - hash + value.charCodeAt(i)
+    hash |= 0
+  }
+
+  return userColors[Math.abs(hash) % userColors.length]
+}
+
 function App() {
   const [status, setStatus] = useState('connecting')
   const [users, setUsers] = useState([])
@@ -33,10 +43,10 @@ function App() {
   }, [])
 
   const user = useMemo(() => {
-    const id = Math.floor(Math.random() * 900) + 100
-    const color = userColors[id % userColors.length]
-    return { name: `User ${id}`, color }
-  }, [])
+    const fallbackId = Math.floor(Math.random() * 900) + 100
+    const label = session?.user?.email || `User ${fallbackId}`
+    return { name: label, color: pickColor(label) }
+  }, [session])
 
   useEffect(() => {
     if (!supabase) {
@@ -248,7 +258,22 @@ function App() {
       </header>
 
       <div className="meta">
-        <span>Connected users: {users.length}</span>
+        <div className="user-list">
+          <span className="user-label">Connected users:</span>
+          {users.length ? (
+            users.map((connectedUser, index) => (
+              <span
+                key={`${connectedUser.name}-${index}`}
+                className="user-pill"
+                style={{ borderColor: connectedUser.color }}
+              >
+                {connectedUser.name}
+              </span>
+            ))
+          ) : (
+            <span className="user-empty">None</span>
+          )}
+        </div>
         <span className="ws">WS: {wsUrl}</span>
       </div>
 
