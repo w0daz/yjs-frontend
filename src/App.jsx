@@ -4,7 +4,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Collaboration from '@tiptap/extension-collaboration'
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor'
 import * as Y from 'yjs'
-import { WebsocketProvider } from 'y-websocket'
+import { HocuspocusProvider } from '@hocuspocus/provider'
 import { createClient } from '@supabase/supabase-js'
 import './App.css'
 
@@ -114,8 +114,11 @@ function App() {
       return null
     }
 
-    return new WebsocketProvider(wsUrl, roomId, doc, {
-      params: { token }
+    return new HocuspocusProvider({
+      url: wsUrl,
+      name: roomId,
+      document: doc,
+      token: () => token
     })
   }, [doc, roomId, wsUrl, token])
 
