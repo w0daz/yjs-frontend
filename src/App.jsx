@@ -118,7 +118,22 @@ function App() {
       url: wsUrl,
       name: roomId,
       document: doc,
-      token: () => token
+      token: () => token,
+      onAuthenticationFailed: ({ reason }) => {
+        console.warn('Auth failed', reason)
+      },
+      onClose: ({ event }) => {
+        console.warn('Socket closed', {
+          code: event.code,
+          reason: event.reason
+        })
+      },
+      onDisconnect: ({ event }) => {
+        console.warn('Socket disconnected', {
+          code: event.code,
+          reason: event.reason
+        })
+      }
     })
   }, [doc, roomId, wsUrl, token])
 
@@ -132,8 +147,6 @@ function App() {
     setStatus('connecting')
     const handleStatus = (event) => setStatus(event.status)
     provider.on('status', handleStatus)
-
-    provider.awareness.setLocalStateField('user', user)
 
     const handleAwareness = () => {
       const states = Array.from(provider.awareness.getStates().values())
@@ -149,6 +162,14 @@ function App() {
       provider.off('status', handleStatus)
       provider.destroy()
     }
+  }, [provider])
+
+  useEffect(() => {
+    if (!provider) {
+      return
+    }
+
+    provider.awareness.setLocalStateField('user', user)
   }, [provider, user])
 
   useEffect(() => () => doc.destroy(), [doc])
