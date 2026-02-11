@@ -282,10 +282,6 @@ button:disabled {
   color: #8b857f;
 }
 
-.ws {
-  font-family: "Courier New", Courier, monospace;
-  word-break: break-all;
-}
 
 .editor-shell {
   background: #ffffff;

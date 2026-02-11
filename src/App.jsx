@@ -625,7 +625,6 @@ function App() {
             <span className="user-empty">None</span>
           )}
         </div>
-        <span className="ws">WS: {wsUrl}</span>
       </div>
 
       <div className="editor-shell">
