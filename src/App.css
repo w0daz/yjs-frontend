@@ -23,6 +23,21 @@ h1 {
   letter-spacing: -0.02em;
 }
 
+.title-link {
+  font-size: 32px;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  cursor: pointer;
+}
+
+.title-link:hover {
+  opacity: 0.8;
+}
+
 .subtitle {
   margin: 6px 0 0;
   color: #5a5752;
@@ -68,6 +83,14 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.room-footer {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .room-form {
@@ -127,6 +150,25 @@ button.ghost {
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid #d6cfc5;
+  background: #ffffff;
+  padding: 0;
+  cursor: pointer;
+}
+
+.icon-button svg {
+  width: 18px;
+  height: 18px;
+  fill: #3b3833;
 }
 
 .error {
@@ -232,6 +274,10 @@ button:disabled {
   font-size: 12px;
 }
 
+.user-pill--self {
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.14);
+}
+
 .user-empty {
   color: #8b857f;
 }
@@ -250,9 +296,36 @@ button:disabled {
   min-height: 360px;
 }
 
+
 .editor {
   outline: none;
   min-height: 320px;
+}
+
+.collaboration-cursor__caret {
+  border-left-width: 2px;
+  border-left-style: solid;
+  margin-left: -1px;
+  margin-right: -1px;
+}
+
+.collaboration-cursor__label {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 120ms ease, transform 120ms ease;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1.2;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.collaboration-cursor__caret:hover .collaboration-cursor__label,
+.collaboration-cursor__label:hover {
+  opacity: 1;
+  transform: translateY(-8px);
 }
 
 .editor p {

@@ -251,6 +251,13 @@ function App() {
     updateRoomInUrl('')
   }
 
+  const handleBackToRooms = () => {
+    setRoomId('')
+    setRoomKey('')
+    setInviteKey('')
+    updateRoomInUrl('')
+  }
+
   const copyToClipboard = async (value, setCopied) => {
     if (!value || !navigator.clipboard) {
       return
@@ -403,7 +410,7 @@ function App() {
     return (
       <div className="app">
         <div className="panel">
-          <h1>Collaborative Editor</h1>
+          <h1>Collab</h1>
           <p className="subtitle">Missing Supabase configuration.</p>
           <p className="helper">
             Add <span className="mono">VITE_SUPABASE_URL</span> and{' '}
@@ -463,7 +470,8 @@ function App() {
     return (
       <div className="app">
         <div className="panel">
-          <h1>Choose a room</h1>
+          <h1>Collab</h1>
+          <p className="subtitle">Choose a room</p>
           <p className="subtitle">
             Create a new room or join an existing one.
           </p>
@@ -506,6 +514,22 @@ function App() {
             </form>
             {roomError ? <p className="error">{roomError}</p> : null}
           </div>
+          <div className="room-footer">
+            <span className="user-pill" style={{ borderColor: user.color }}>
+              {session?.user?.email}
+            </span>
+            <button
+              className="icon-button"
+              type="button"
+              onClick={handleSignOut}
+              title="Sign out"
+              aria-label="Sign out"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4v-2h4V5h-4V3zm-2.5 5.5 1.4 1.4-2.1 2.1H21v2h-9.2l2.1 2.1-1.4 1.4L8 12l4.5-4.5z" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -515,13 +539,22 @@ function App() {
     <div className="app">
       <header className="app-header">
         <div>
-          <h1>Collaborative Editor</h1>
-          <p className="subtitle">Room: {roomId}</p>
+          <button className="title-link" type="button" onClick={handleBackToRooms}>
+            Collab
+          </button>
         </div>
         <div className="header-actions">
           <div className={`status status--${status}`}>{status}</div>
-          <button className="ghost" type="button" onClick={handleSignOut}>
-            Sign out
+          <button
+            className="icon-button"
+            type="button"
+            onClick={handleSignOut}
+            title="Sign out"
+            aria-label="Sign out"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4v-2h4V5h-4V3zm-2.5 5.5 1.4 1.4-2.1 2.1H21v2h-9.2l2.1 2.1-1.4 1.4L8 12l4.5-4.5z" />
+            </svg>
           </button>
         </div>
       </header>
@@ -582,7 +615,7 @@ function App() {
             users.map((connectedUser, index) => (
               <span
                 key={`${connectedUser.name}-${index}`}
-                className="user-pill"
+                className={`user-pill${connectedUser.name === user.name ? ' user-pill--self' : ''}`}
                 style={{ borderColor: connectedUser.color }}
               >
                 {connectedUser.name}
