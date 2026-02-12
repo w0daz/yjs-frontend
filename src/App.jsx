@@ -70,6 +70,8 @@ function App() {
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState('')
   const [authLoading, setAuthLoading] = useState(false)
+  const [authNotice, setAuthNotice] = useState('')
+  const [authMode, setAuthMode] = useState('sign-in')
   const [roomId, setRoomId] = useState(() => getRoomFromUrl())
   const [roomKeyInput, setRoomKeyInput] = useState('')
   const [inviteInput, setInviteInput] = useState('')
@@ -204,6 +206,7 @@ function App() {
     }
 
     setAuthError('')
+    setAuthNotice('')
     setAuthLoading(true)
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -224,15 +227,31 @@ function App() {
     }
 
     setAuthError('')
+    setAuthNotice('')
     setAuthLoading(true)
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password
     })
     setAuthLoading(false)
 
     if (error) {
-      setAuthError(error.message)
+      const message = String(error.message || '').toLowerCase()
+      if (error.status === 409 || message.includes('already registered') || message.includes('already exists')) {
+        setAuthError('An account already exists with that email.')
+      } else {
+        setAuthError(error.message)
+      }
+      return
+    }
+
+    if (!data?.session) {
+      const identities = data?.user?.identities || []
+      if (identities.length === 0) {
+        setAuthError('An account already exists with that email.')
+      } else {
+        setAuthNotice('Check your email to confirm your account before signing in.')
+      }
     }
   }
 
@@ -426,9 +445,12 @@ function App() {
     return (
       <div className="app">
         <div className="panel">
-          <h1>Sign in</h1>
+          <h1>{authMode === 'sign-in' ? 'Sign in' : 'Sign up'}</h1>
           <p className="subtitle">Access is required to join a document.</p>
-          <form className="auth-form" onSubmit={handleSignIn}>
+          <form
+            className="auth-form"
+            onSubmit={authMode === 'sign-in' ? handleSignIn : handleSignUp}
+          >
             <label className="field">
               <span>Email</span>
               <input
@@ -448,17 +470,44 @@ function App() {
               />
             </label>
             {authError ? <p className="error">{authError}</p> : null}
+            {authNotice ? <p className="notice">{authNotice}</p> : null}
             <div className="actions">
               <button className="primary" type="submit" disabled={authLoading}>
-                Sign in
+                {authMode === 'sign-in' ? 'Sign in' : 'Create account'}
               </button>
-              <button
-                type="button"
-                onClick={handleSignUp}
-                disabled={authLoading}
-              >
-                Create account
-              </button>
+            </div>
+            <div className="auth-switch">
+              {authMode === 'sign-in' ? (
+                <span>
+                  Don&apos;t have an account?{' '}
+                  <button
+                    className="link-button"
+                    type="button"
+                    onClick={() => {
+                      setAuthMode('sign-up')
+                      setAuthError('')
+                      setAuthNotice('')
+                    }}
+                  >
+                    Sign up
+                  </button>
+                </span>
+              ) : (
+                <span>
+                  Already have an account?{' '}
+                  <button
+                    className="link-button"
+                    type="button"
+                    onClick={() => {
+                      setAuthMode('sign-in')
+                      setAuthError('')
+                      setAuthNotice('')
+                    }}
+                  >
+                    Sign in instead
+                  </button>
+                </span>
+              )}
             </div>
           </form>
         </div>
